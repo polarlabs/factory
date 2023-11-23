@@ -9,6 +9,11 @@ on:
       BUILD_TAG:
         value: ${{ jobs.get-next-build.outputs.BUILD_TAG }}
 
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+permissions:
+  contents: read
+
 env:
   CURL_OPTIONS: "--fail-with-body --location --show-error --silent"
   DEFAULT_BUILD_NUMBER: "1"
