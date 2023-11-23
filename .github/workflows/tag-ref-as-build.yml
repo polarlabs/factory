@@ -17,7 +17,7 @@ defaults:
 
 jobs:
   get-next-build:
-    uses: polarlabs/factory/.github/workflows/get-next-build.yml@dev
+    uses: polarlabs/factory/.github/workflows/get-next-build.yml@v/1.0.0
 
   tag-ref-as-build:
     runs-on: ubuntu-latest
