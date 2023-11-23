@@ -1,0 +1,69 @@
+name: Get next BUILD
+
+on:
+  workflow_call:
+    # Map workflow outputs to job outputs.
+    outputs:
+      BUILD_NUMBER:
+        value: ${{ jobs.get-next-build.outputs.BUILD_NUMBER }}
+      BUILD_TAG:
+        value: ${{ jobs.get-next-build.outputs.BUILD_TAG }}
+
+env:
+  CURL_OPTIONS: "--fail-with-body --location --show-error --silent"
+  DEFAULT_BUILD_NUMBER: "1"
+  BUILD_TAG_PREFIX: "build"
+  INTEGER_REGEX: "^[1-9][0-9]*$"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  get-next-build:
+    runs-on: ubuntu-latest
+
+    # Map step outputs to job outputs.
+    outputs:
+      BUILD_NUMBER: ${{ steps.return-next-build.outputs.BUILD_NUMBER }}
+      BUILD_TAG: ${{ steps.return-next-build.outputs.BUILD_TAG }}
+
+    steps:
+      - name: Get highest BUILD_NUMBER
+        id: get-highest-build-number
+        # Get a list of refs matching "tags/build/".
+        # Cut the path separated by "/" and return last part, expected to be an int.
+        # Sort numerically ascending
+        # Return last
+        run: |
+          echo "BUILD_NUMBER=$( \
+          curl ${{ env.CURL_OPTIONS }} \
+               -X GET \
+               -H "Accept: application/vnd.github+json" \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "X-GitHub-Api-Version: 2022-11-28" \
+               ${{ github.api_url }}/repos/${{ github.repository }}/git/matching-refs/tags/${{ env.BUILD_TAG_PREFIX}}/ \
+               | jq -r '.[].ref' \
+               | cut --delimiter="/" --only-delimited --fields 4 \
+               | grep -E '${{ env.INTEGER_REGEX }}' \
+               | sort --general-numeric-sort \
+               | tail -1 )" >> $GITHUB_ENV
+
+      - name: Increment BUILD_NUMBER
+        id: increment-build-number
+        run: |
+             if [[ -n "${{ env.BUILD_NUMBER }}" ]]; then
+               echo "::notice title=BUILD_NUMBER::✅ BUILD_NUMBER: ${{ env.BUILD_NUMBER }} found."
+               echo "BUILD_NUMBER=$((${{ env.BUILD_NUMBER }} + 1))" >> $GITHUB_ENV
+             else
+               echo "::notice title=BUILD_NUMBER::❌ BUILD_NUMBER not found. Use ${{ env.DEFAULT_BUILD_NUMBER }} as default."
+               echo "BUILD_NUMBER=${{ env.DEFAULT_BUILD_NUMBER }}" >> $GITHUB_ENV
+             fi
+
+      - name: Return next BUILD_NUMBER and BUILD_TAG
+        id: return-next-build
+        run: |
+             echo "::notice title=BUILD_NUMBER::✅ next BUILD_NUMBER: ${{ env.BUILD_NUMBER }} ."
+             echo "BUILD_NUMBER=${{ env.BUILD_NUMBER }}" >> $GITHUB_OUTPUT
+             echo "::notice title=BUILD_TAG::✅ next BUILD_TAG: ${{ env.BUILD_TAG_PREFIX}}/${{ env.BUILD_NUMBER }} ."
+             echo "BUILD_TAG=${{ env.BUILD_TAG_PREFIX}}/${{ env.BUILD_NUMBER }}" >> $GITHUB_OUTPUT
