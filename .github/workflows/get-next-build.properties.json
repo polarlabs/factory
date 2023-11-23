@@ -1,0 +1,5 @@
+{
+  "name": "Get next BUILD_NUMBER and BUILD_TAG",
+  "description": "Enumerates existing build tags complying to pattern build/#, increments #, returns next BUILD_NUMBER and BUILD_TAG.",
+  "iconName": "octicon tag"
+}
