@@ -1,0 +1,5 @@
+{
+  "name": "Tag ref as build",
+  "description": "Tags ref with an annotated build tag.",
+  "iconName": "octicon tag"
+}
