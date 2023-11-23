@@ -3,6 +3,11 @@ name: Tag ref as build
 on:
   workflow_call:
 
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+permissions:
+  contents: write
+
 env:
   CURL_OPTIONS: "--fail-with-body --location --show-error --silent"
 
