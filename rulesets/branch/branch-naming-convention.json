@@ -1,0 +1,26 @@
+{
+  "id": 223044,
+  "name": "Branch: naming convention",
+  "target": "branch",
+  "source_type": "Repository",
+  "source": "polarlabs/factory",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [
+        "refs/heads/main",
+        "refs/heads/dev",
+        "refs/heads/feat/*",
+        "refs/heads/rel/*",
+        "refs/heads/patch/*"
+      ],
+      "include": []
+    }
+  },
+  "rules": [
+    {
+      "type": "creation"
+    }
+  ],
+  "bypass_actors": []
+}

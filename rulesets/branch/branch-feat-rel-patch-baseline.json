@@ -1,0 +1,30 @@
+{
+  "id": 223142,
+  "name": "Branch feat | rel | patch: baseline",
+  "target": "branch",
+  "source_type": "Repository",
+  "source": "polarlabs/factory",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "refs/heads/feat/*",
+        "refs/heads/rel/*",
+        "refs/heads/patch/*"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
+    },
+    {
+      "type": "required_signatures"
+    }
+  ],
+  "bypass_actors": []
+}

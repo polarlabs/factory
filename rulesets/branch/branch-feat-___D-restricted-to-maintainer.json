@@ -1,0 +1,31 @@
+{
+  "id": 223131,
+  "name": "Branch feat: D restricted to Maintainer",
+  "target": "branch",
+  "source_type": "Repository",
+  "source": "polarlabs/factory",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "refs/heads/feat/*"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": 2,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "always"
+    }
+  ]
+}
