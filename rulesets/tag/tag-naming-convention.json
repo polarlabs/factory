@@ -1,0 +1,27 @@
+{
+  "id": 223049,
+  "name": "Tag: naming convention",
+  "target": "tag",
+  "source_type": "Repository",
+  "source": "polarlabs/factory",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [
+        "refs/tags/build/[0-9]",
+        "refs/tags/build/[0-9][0-9]",
+        "refs/tags/build/[0-9][0-9][0-9]",
+        "refs/tags/build/[0-9][0-9][0-9][0-9]",
+        "refs/tags/build/[0-9][0-9][0-9][0-9][0-9]",
+        "refs/tags/v/[0-9].[0-9].[0-9]"
+      ],
+      "include": []
+    }
+  },
+  "rules": [
+    {
+      "type": "creation"
+    }
+  ],
+  "bypass_actors": []
+}
