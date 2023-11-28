@@ -67,6 +67,9 @@ jobs:
 
       - name: Return BUILD_NUMBER and BUILD_TAG
         id: return-build
+        env:
+          BUILD_NUMBER: ${{ needs.get-next-build.outputs.BUILD_NUMBER }}
+          BUILD_TAG: ${{ needs.get-next-build.outputs.BUILD_TAG }}
         run: |
           echo "BUILD_NUMBER=${{ env.BUILD_NUMBER }}" >> $GITHUB_OUTPUT
-          echo "BUILD_TAG=${{ env.BUILD_TAG_PREFIX}}/${{ env.BUILD_NUMBER }}" >> $GITHUB_OUTPUT
+          echo "BUILD_TAG=${{ env.BUILD_TAG }}" >> $GITHUB_OUTPUT
