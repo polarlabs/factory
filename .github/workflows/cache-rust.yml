@@ -1,0 +1,39 @@
+name: Cache Rust
+
+on:
+  workflow_call:
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+#permissions:
+
+#env:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cache-rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: cache
+        id: cache-crates
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-crates
+        with:
+          path: |
+            ~/.cargo
+            ./target
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - if: ${{ steps.cache-crates.outputs.cache-hit != 'true' }}
+        name: cargo fetch
+        run: |
+          cargo fetch --locked
