@@ -32,7 +32,7 @@ jobs:
       - name: Extract version
         id: extract-version
         run: |
-          if [[ ${{ github.ref_name }} =~ $VERSION_TAG_REGEX ]]; then
+          if [[ ${{ github.ref_name }} =~ ${{ env.VERSION_TAG_REGEX }} ]]; then
             echo "VERSION_STRING=$( \
             echo ${{ github.ref_name }} \
             | grep -Po "^.*/\K\d.\d.\d$" )" >> $GITHUB_ENV
