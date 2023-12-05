@@ -1,0 +1,5 @@
+{
+  "name": "Get VERSION_STRING from ref",
+  "description": "Extracts the version string from ref.",
+  "iconName": "octicon tag"
+}
