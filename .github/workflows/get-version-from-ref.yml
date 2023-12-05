@@ -14,7 +14,7 @@ permissions:
 
 env:
   VERSION_STRING: ""
-  VERSION_TAG_REGEX: "^.*/[0-9]+\.[0-9]+\.[0-9]+$"
+  VERSION_TAG_REGEX: '^.*/[0-9]+\.[0-9]+\.[0-9]+$'
 
 defaults:
   run:
