@@ -1,0 +1,5 @@
+{
+  "name": "Cache Rust",
+  "description": "Cache dependencies and build artifacts of Rust projects.",
+  "iconName": "octicon rocket"
+}

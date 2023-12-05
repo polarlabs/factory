@@ -1,0 +1,65 @@
+name: Cache Rust
+
+on:
+  workflow_call:
+    # Map workflow outputs to job outputs.
+    outputs:
+      CACHE_KEY:
+        value: ${{ jobs.cache-rust.outputs.CACHE_KEY }}
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+permissions:
+  contents: read
+
+#env:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cache-rust:
+    runs-on: ubuntu-latest
+
+    # Map step outputs to job outputs.
+    outputs:
+      CACHE_KEY: ${{ steps.return-cache-key.outputs.CACHE_KEY }}
+
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v4
+
+      - name: Set CACHE_KEY
+        id: set-cache-key
+        env:
+          cache-name: cache-crates
+        run: |
+          echo "CACHE_KEY=${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}" >> $GITHUB_ENV
+          echo "RESTORE_KEY_1=${{ runner.os }}-build-${{ env.cache-name }}-" >> $GITHUB_ENV
+          echo "RESTORE_KEY_2=${{ runner.os }}-build-" >> $GITHUB_ENV
+          echo "RESTORE_KEY_3=${{ runner.os }}-" >> $GITHUB_ENV
+
+      - name: cache
+        id: cache-crates
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+            ./target
+          key: ${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ env.RESTORE_KEY_1 }}
+            ${{ env.RESTORE_KEY_2 }}
+            ${{ env.RESTORE_KEY_3 }}
+
+      - if: ${{ steps.cache-crates.outputs.cache-hit != 'true' }}
+        name: cargo fetch
+        run: |
+          cargo fetch --locked
+
+      - name: Return CACHE_KEY
+        id: return-cache-key
+        run: |
+          echo "::notice title=CACHE_KEY::✅ CACHE_KEY: ${{ env.CACHE_KEY }} ."
+          echo "CACHE_KEY=${{ env.CACHE_KEY }}" >> $GITHUB_OUTPUT
