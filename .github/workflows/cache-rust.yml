@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: git checkout
+        uses: actions/checkout@v4
+
       - name: cache
         id: cache-crates
         uses: actions/cache@v3
