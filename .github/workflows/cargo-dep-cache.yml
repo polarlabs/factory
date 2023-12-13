@@ -1,0 +1,74 @@
+#
+# Fetch and cache dependencies.
+#
+env:
+  CACHE_KEY_PREFIX: "cargo-dep_cache"
+  CARGO_FETCH_OPTIONS: "--locked"
+  CARGO_TERM_COLOR: "always"
+
+on:
+  workflow_call:
+    outputs:
+      CACHE_HIT:
+        description: "A boolean value to indicate an exact match was found for the key."
+        value: ${{ jobs.cache-deps.outputs.CACHE_HIT }}
+      CACHE_KEY:
+        description: "An explicit key to identify the cache."
+        value: ${{ jobs.cache-deps.outputs.CACHE_KEY }}
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cache-deps:
+    runs-on: ubuntu-latest
+
+    # Map step outputs to job outputs.
+    outputs:
+      CACHE_HIT: ${{ steps.set-output.outputs.CACHE_HIT }}
+      CACHE_KEY: ${{ steps.set-output.outputs.CACHE_KEY }}
+
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Set environment (stage 1)
+        run: |
+          echo "RUNNER_OS="$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]' )"" >> $GITHUB_ENV
+          echo "HASH="${{ hashFiles('Cargo.lock') }}"" >> $GITHUB_ENV
+
+      - name: Set environment (stage 2)
+        run: |
+          echo "CACHE_KEY=${{ env.CACHE_KEY_PREFIX }}-${{ env.RUNNER_OS }}-${{ env.HASH }}" >> $GITHUB_ENV
+          echo "RESTORE_KEY_1=${{ env.CACHE_KEY_PREFIX }}-${{ env.RUNNER_OS }}" >> $GITHUB_ENV
+          echo "RESTORE_KEY_2=${{ env.CACHE_KEY_PREFIX }}" >> $GITHUB_ENV
+
+      - name: Provide dependency cache
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/
+          key: ${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ env.RESTORE_KEY_1 }}
+            ${{ env.RESTORE_KEY_2 }}
+
+      - name: Fetch dependencies with cargo fetch
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        run: |
+          cargo fetch ${{ env.CARGO_FETCH_OPTIONS }}
+
+      - name: Set output
+        id: set-output
+        run: |
+          echo "::notice title=CACHE_HIT::✅ CACHE_HIT: ${{ env.CACHE_HIT || 'false' }} ."
+          echo "CACHE_HIT=${{ env.CACHE_HIT || false }}" >> $GITHUB_OUTPUT
+          echo "::notice title=CACHE_KEY::✅ CACHE_KEY: ${{ env.CACHE_KEY }} ."
+          echo "CACHE_KEY=${{ env.CACHE_KEY }}" >> $GITHUB_OUTPUT

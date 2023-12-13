@@ -1,0 +1,5 @@
+{
+  "name": "Cache cargo dependencies",
+  "description": "Cache cargo dependencies.",
+  "iconName": "octicon tag"
+}
