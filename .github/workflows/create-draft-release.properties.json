@@ -1,0 +1,5 @@
+{
+  "name": "Create a draft release",
+  "description": "Creates or updates a draft release.",
+  "iconName": "octicon hubot"
+}
