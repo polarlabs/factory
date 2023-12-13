@@ -41,7 +41,7 @@ on:
 #  contents: read
 
 env:
-  GH_RELEASE_CREATE_OPTIONS: ""
+  GH_RELEASE_CREATE_OPTIONS: "--draft=${{ inputs.DRAFT }} --latest=${{ inputs.LATEST }} --title \"${{ inputs.TITLE }}\" --target ${{ inputs.COMMIT }} "
   GH_RELEASE_DELETE_OPTIONS: "--yes "
   GH_RELEASE_VIEW_OPTIONS: "--json id,name,createdAt,tagName,assets "
 
@@ -56,18 +56,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Eval inputs
-        if: ${{ inputs.DRAFT == true }}
-        run: |
-          echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} --draft" >> "$GITHUB_ENV"
+      #- name: Eval inputs
+      #  if: ${{ inputs.DRAFT == true }}
+      #  run: |
+      #    echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} --draft" >> "$GITHUB_ENV"
 
       - name: Set environment
         run: |
           echo "SHA_SHORT=$(git rev-parse --short ${{ inputs.COMMIT }} )" >> "$GITHUB_ENV"
-          echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} 
-            --latest=${{ inputs.latest }} 
-            --title \"${{ inputs.title }}\" 
-            --target ${{ inputs.COMMIT }} " >> "$GITHUB_ENV"
 
       - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
         uses: actions/download-artifact@v3
