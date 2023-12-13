@@ -1,0 +1,113 @@
+#
+# Checks and builds and provide a build cache.
+#
+env:
+  CACHE_KEY_PREFIX: "cargo-build_cache"
+  CARGO_BUILD_OPTIONS: "--frozen --profile ${{ inputs.PROFILE }}"
+  CARGO_TERM_COLOR: "always"
+  LIBTEST_OPTIONS: "--nocapture --color always --format pretty"
+
+on:
+  workflow_call:
+    inputs:
+      DEPS_CACHE_KEY:
+        description: "Cache key for the dependencies."
+        default: ""
+        required: true
+        type: string
+      PROFILE:
+        description: "Profile used to build."
+        default: "dev"
+        required: false
+        type: string
+
+    outputs:
+      CACHE_HIT:
+        description: "Flag to indicate if there was a cache hit."
+        value: ${{ jobs.build.outputs.CACHE_HIT }}
+      CACHE_KEY:
+        description: "Key of the cache created."
+        value: ${{ jobs.build.outputs.CACHE_KEY }}
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Map step outputs to job outputs.
+    outputs:
+      CACHE_HIT: ${{ steps.set-output.outputs.CACHE_HIT }}
+      CACHE_KEY: ${{ steps.set-output.outputs.CACHE_KEY }}
+
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.cargo/
+          key: ${{ inputs.DEPS_CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Set environment (stage 1)
+        run: |
+          echo "RUNNER_OS="$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]' )"" >> $GITHUB_ENV
+          echo "HASH="${{ hashFiles('Cargo.lock') }}"" >> $GITHUB_ENV
+
+      - name: Set environment (stage 2)
+        run: |
+          echo "CACHE_KEY=${{ env.CACHE_KEY_PREFIX }}-${{ inputs.PROFILE }}-${{ env.RUNNER_OS }}-${{ env.HASH }}" >> $GITHUB_ENV
+          echo "RESTORE_KEY_1=${{ env.CACHE_KEY_PREFIX }}-${{ inputs.PROFILE }}-${{ env.RUNNER_OS }}" >> $GITHUB_ENV
+          echo "RESTORE_KEY_2=${{ env.CACHE_KEY_PREFIX }}-${{ inputs.PROFILE }}" >> $GITHUB_ENV
+          echo "RESTORE_KEY_3=${{ env.CACHE_KEY_PREFIX }}" >> $GITHUB_ENV
+
+      - name: Provide build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            target/
+          key: ${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ env.RESTORE_KEY_1 }}
+            ${{ env.RESTORE_KEY_2 }}
+            ${{ env.RESTORE_KEY_3 }}
+
+      # cargo check fails faster, then cargo build, while it's results
+      # are consumed by subsequent cargo build runs.
+      - name: Check library crate for errors - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo check ${{ env.CARGO_BUILD_OPTIONS }} --lib
+
+      - name: Check binary crates for errors - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo check ${{ env.CARGO_BUILD_OPTIONS }} --bin '*'
+
+      - name: Build library crate - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo build ${{ env.CARGO_BUILD_OPTIONS }} --lib
+
+      - name: Build binary crate - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo build ${{ env.CARGO_BUILD_OPTIONS }} --bin '*'
+
+      - name: Populate build cache with dev dependencies and libtest
+        run: |
+          cargo test ${{ env.CARGO_BUILD_OPTIONS }} --no-run -- ${{ env.LIBTEST_OPTIONS }}
+
+      - name: Set output
+        id: set-output
+        run: |
+          echo "::notice title=CACHE_HIT::✅ CACHE_HIT: ${{ env.CACHE_HIT || 'false' }} ."
+          echo "CACHE_HIT=${{ env.CACHE_HIT || false }}" >> $GITHUB_OUTPUT
+          echo "::notice title=CACHE_KEY::✅ CACHE_KEY: ${{ env.CACHE_KEY }} ."
+          echo "CACHE_KEY=${{ env.CACHE_KEY }}" >> $GITHUB_OUTPUT
