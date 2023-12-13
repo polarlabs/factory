@@ -23,7 +23,7 @@ on:
         description: "Flag release as draft."
         type: boolean
         required: false
-        default: false
+        default: true
       LATEST:
         description: "Flag release as latest."
         type: boolean
