@@ -3,6 +3,10 @@ name: Create draft release
 on:
   workflow_call:
     inputs:
+      ARTIFACT_NAME:
+        description: "..."
+        required: true
+        type: string
       ASSET_FILE:
         description: "Asset's file name."
         default: ""
@@ -51,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Set environment
         run: |
           echo "SHA_SHORT=$(git rev-parse --short ${{ inputs.COMMIT }} )" >> "$GITHUB_ENV"
@@ -71,6 +77,15 @@ jobs:
           gh release delete ${{ inputs.TAG }} --yes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.ARTIFACT_NAME }}
+
+      - name: Unzip artifact ${{ inputs.ARTIFACT_NAME }}
+        run: |
+          unzip ${{ inputs.ARTIFACT_NAME }}
 
       # Create release
       - name: Create release on ${{ env.SHA_SHORT }} with tag ${{ inputs.TAG }}
