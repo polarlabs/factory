@@ -58,8 +58,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Eval inputs (1)
-        if: inputs.DRAFT
+      - name: Eval inputs
+        if: ${{ inputs.DRAFT }}
         run: |
           echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} --draft" >> "$GITHUB_ENV"
 
