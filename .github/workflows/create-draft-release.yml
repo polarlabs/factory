@@ -43,7 +43,7 @@ on:
 #  contents: read
 
 env:
-  GH_RELEASE_CREATE_OPTIONS: "--latest=${{ inputs.latest }} --title \"${{ inputs.title }}\" --target ${{ github.repository }}/commit/${{ inputs.COMMIT }} "
+  GH_RELEASE_CREATE_OPTIONS: "--latest=${{ inputs.latest }} --title \"${{ inputs.title }}\" --target ${{ inputs.COMMIT }} "
   GH_RELEASE_DELETE_OPTIONS: "--yes "
   GH_RELEASE_VIEW_OPTIONS: "--json id,name,createdAt,tagName,assets "
 
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Eval inputs (1)
-        if: inputs.DRAFT == true
+        if: inputs.DRAFT
         run: |
           echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} --draft" >> "$GITHUB_ENV"
 
@@ -102,6 +102,6 @@ jobs:
       # View details of created release, pretty print json output with jq
       - name: Post View release ${{ inputs.TAG }}
         run: |
-          gh release view ${{ inputs.TAG }} --json ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
+          gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
