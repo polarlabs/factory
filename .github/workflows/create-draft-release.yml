@@ -12,29 +12,28 @@ on:
         default: ""
         required: true
         type: string
-      ASSET_NAME:
-        description: "Asset's name."
-        default: ""
-        required: true
-        type: string
       COMMIT:
         description: "Commit to get tagged."
         default: ""
         required: true
         type: string
+      DRAFT:
+        description: "Flag release as draft"
+        default: false
+        required: false
+        type: boolean
       LATEST:
-        description: "Flag as latest"
+        description: "Flag release as latest"
         default: false
         required: false
         type: boolean
       TAG:
         description: "Tag to create."
-        default: ""
         required: true
         type: string
       TITLE:
         description: "Title"
-        default: "Draft, intended for CI / CD only."
+        default: ""
         required: false
         type: string
 
@@ -44,7 +43,9 @@ on:
 #  contents: read
 
 env:
-  JSON_OUTPUT: "id,name,createdAt,tagName,assets"
+  GH_RELEASE_CREATE_OPTIONS: "--latest=${{ inputs.latest }} --title \"${{ inputs.title }}\" --target ${{ github.repository }}/commit/${{ inputs.COMMIT }} "
+  GH_RELEASE_DELETE_OPTIONS: "--yes "
+  GH_RELEASE_VIEW_OPTIONS: "--json id,name,createdAt,tagName,assets "
 
 defaults:
   run:
@@ -57,15 +58,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Eval inputs (1)
+        if: inputs.DRAFT == true
+        run: |
+          echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} --draft" >> "$GITHUB_ENV"
+
       - name: Set environment
         run: |
           echo "SHA_SHORT=$(git rev-parse --short ${{ inputs.COMMIT }} )" >> "$GITHUB_ENV"
 
-      # Check if release already exists
+      - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.ARTIFACT_NAME }}
+
+      # Check if release already exists, pretty print json output with jq
       - name: View release ${{ inputs.TAG }}
         id: view-release
         run: |
-          gh release view ${{ inputs.TAG }} --json ${{ env.JSON_OUTPUT }} | jq -e .
+          gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -74,38 +85,23 @@ jobs:
       - name: Delete release ${{ inputs.TAG }}
         if: steps.view-release.outcome == 'success'
         run: |
-          gh release delete ${{ inputs.TAG }} --yes
+          gh release delete ${{ inputs.TAG }} ${{ env.GH_RELEASE_DELETE_OPTIONS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ inputs.ARTIFACT_NAME }}
-
-      - name: List
-        run: |
-          ls -al
-
-      #- name: Unzip artifact ${{ inputs.ARTIFACT_NAME }}
-      #  run: |
-      #    unzip ${{ inputs.ARTIFACT_NAME }}
-
       # Create release
-      - name: Create release on ${{ env.SHA_SHORT }} with tag ${{ inputs.TAG }}
+      - name: Create release ${{ inputs.TAG }} on ${{ env.SHA_SHORT }}
         run: |
           gh release create \
             ${{ inputs.TAG }} \
-            ${{ inputs.ASSET_FILE }}#${{ inputs.ASSET_NAME }} \
-            --latest=${{ inputs.LATEST }} \
-            --title "${{ inputs.TITLE }}" \
-            --draft
+            ${{ inputs.ASSET_FILE }}#${{ inputs.ARTIFACT_NAME }} \
+            ${{ env.GH_RELEASE_CREATE_OPTIONS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # View details of created release
+      # View details of created release, pretty print json output with jq
       - name: Post View release ${{ inputs.TAG }}
         run: |
-          gh release view ${{ inputs.TAG }} --json ${{ env.JSON_OUTPUT }} | jq -e .
+          gh release view ${{ inputs.TAG }} --json ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
