@@ -98,7 +98,6 @@ jobs:
             ${{ inputs.TAG }} \
             ${{ inputs.ASSET_FILE }}#${{ inputs.ASSET_NAME }} \
             --latest=${{ inputs.LATEST }} \
-            --target ${{ inputs.COMMIT }} \ 
             --title "${{ inputs.TITLE }}" \
             --draft
         env:
