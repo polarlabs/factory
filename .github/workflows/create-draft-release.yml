@@ -42,7 +42,7 @@ on:
 
 env:
   GH_RELEASE_CREATE_OPTIONS: "--draft=${{ inputs.DRAFT }} --latest=${{ inputs.LATEST }} --title \"${{ inputs.TITLE }}\" --target ${{ inputs.COMMIT }} "
-  GH_RELEASE_DELETE_OPTIONS: "--yes "
+  GH_RELEASE_DELETE_OPTIONS: "--yes --cleanup-tag "
   GH_RELEASE_VIEW_OPTIONS: "--json id,name,createdAt,tagName,assets "
 
 defaults:
