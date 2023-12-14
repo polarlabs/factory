@@ -1,6 +1,8 @@
 #
 # Checks and builds and provide a build cache.
 #
+# todo: this workflow fails if the crate is not a library crate
+#
 env:
   CACHE_KEY_PREFIX: "cargo-build_cache"
   CARGO_BUILD_OPTIONS: "--frozen --profile ${{ inputs.PROFILE }}"
