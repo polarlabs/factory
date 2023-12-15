@@ -1,10 +1,10 @@
-name: Create draft release
+name: Create release
 
 on:
   workflow_call:
     inputs:
       ARTIFACT_NAME:
-        description: "..."
+        description: "Artifact to include in the release, also used as asset name."
         type: string
         required: true
       ASSET_FILE:
@@ -12,11 +12,11 @@ on:
         type: string
         required: true
       COMMIT:
-        description: "Commit to get tagged."
+        description: "Commit to tag, relates the release to a defined commit."
         type: string
         required: true
       TAG:
-        description: "Tag to create."
+        description: "Tag to relate the release to, also used as a name for the release."
         type: string
         required: true
       DRAFT:
@@ -24,13 +24,18 @@ on:
         type: boolean
         required: false
         default: true
+      PRERELEASE:
+        description: "Flag release as prerelease."
+        type: boolean
+        required: false
+        default: false
       LATEST:
         description: "Flag release as latest."
         type: boolean
         required: false
         default: false
       TITLE:
-        description: "Title"
+        description: "Release title"
         type: string
         required: false
         default: ""
@@ -41,7 +46,7 @@ on:
 #  contents: read
 
 env:
-  GH_RELEASE_CREATE_OPTIONS: "--draft=${{ inputs.DRAFT }} --latest=${{ inputs.LATEST }} --title \"${{ inputs.TITLE }}\" --target ${{ inputs.COMMIT }} "
+  GH_RELEASE_CREATE_OPTIONS: "--draft=${{ inputs.DRAFT }} --prerelease=${{ inputs.PRERELEASE }} --latest=${{ inputs.LATEST }} --title \"${{ inputs.TITLE }}\" --target ${{ inputs.COMMIT }} "
   GH_RELEASE_DELETE_OPTIONS: "--yes "
   GH_RELEASE_VIEW_OPTIONS: "--json id,name,tagName,author,createdAt,isDraft,isPrerelease,apiUrl,targetCommitish,assets "
 
@@ -54,15 +59,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      #- name: Eval inputs
-      #  if: ${{ inputs.DRAFT == true }}
-      #  run: |
-      #    echo "GH_RELEASE_CREATE_OPTIONS=${{ env.GH_RELEASE_CREATE_OPTIONS }} --draft" >> "$GITHUB_ENV"
+      - name: Checkout git repo
+        uses: actions/checkout@v4
 
       - name: Set environment
         run: |
+          echo "IS_DRAFT=$(gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq .isDraft)" >> "$GITHUB_ENV"
           echo "SHA_SHORT=$(git rev-parse --short ${{ inputs.COMMIT }} )" >> "$GITHUB_ENV"
 
       - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
@@ -74,13 +76,12 @@ jobs:
       - name: View release ${{ inputs.TAG }}
         id: view-release
         run: |
-          echo "IS_DRAFT=$(gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq .isDraft)" >> "$GITHUB_ENV"
           gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      # Delete release if it already exists (with or without tag)
+      # Delete release if it already exists (with / without tag)
       - name: Delete release ${{ inputs.TAG }}
         if: steps.view-release.outcome == 'success' && env.IS_DRAFT == 'true'
         run: |
@@ -88,7 +89,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete release ${{ inputs.TAG }} and tag
+      - name: Delete release ${{ inputs.TAG }} and related tag
         if: steps.view-release.outcome == 'success' && env.IS_DRAFT == 'false'
         run: |
           gh release delete ${{ inputs.TAG }} ${{ env.GH_RELEASE_DELETE_OPTIONS }} --cleanup-tag
