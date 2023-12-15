@@ -46,8 +46,6 @@ jobs:
       - name: Set environment (stage 2)
         run: |
           echo "CACHE_KEY=${{ env.CACHE_KEY_PREFIX }}-${{ env.RUNNER_OS }}-${{ env.HASH }}" >> $GITHUB_ENV
-          echo "RESTORE_KEY_1=${{ env.CACHE_KEY_PREFIX }}-${{ env.RUNNER_OS }}" >> $GITHUB_ENV
-          echo "RESTORE_KEY_2=${{ env.CACHE_KEY_PREFIX }}" >> $GITHUB_ENV
 
       - name: Provide dependency cache
         id: cache
@@ -56,9 +54,6 @@ jobs:
           path: |
             ~/.cargo/
           key: ${{ env.CACHE_KEY }}
-          restore-keys: |
-            ${{ env.RESTORE_KEY_1 }}
-            ${{ env.RESTORE_KEY_2 }}
 
       - name: Fetch dependencies with cargo fetch
         if: ${{ steps.cache.outputs.cache-hit != 'true' }}
