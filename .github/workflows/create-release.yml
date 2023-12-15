@@ -66,6 +66,8 @@ jobs:
         run: |
           echo "IS_DRAFT=$(gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq .isDraft)" >> "$GITHUB_ENV"
           echo "SHA_SHORT=$(git rev-parse --short ${{ inputs.COMMIT }} )" >> "$GITHUB_ENV"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
         uses: actions/download-artifact@v3
