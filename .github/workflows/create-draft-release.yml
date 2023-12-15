@@ -42,8 +42,8 @@ on:
 
 env:
   GH_RELEASE_CREATE_OPTIONS: "--draft=${{ inputs.DRAFT }} --latest=${{ inputs.LATEST }} --title \"${{ inputs.TITLE }}\" --target ${{ inputs.COMMIT }} "
-  GH_RELEASE_DELETE_OPTIONS: "--yes --cleanup-tag "
-  GH_RELEASE_VIEW_OPTIONS: "--json id,name,createdAt,tagName,assets "
+  GH_RELEASE_DELETE_OPTIONS: "--yes "
+  GH_RELEASE_VIEW_OPTIONS: "--json id,name,tagName,author,createdAt,isDraft,isPrerelease,apiUrl,targetCommitish,assets "
 
 defaults:
   run:
@@ -74,16 +74,24 @@ jobs:
       - name: View release ${{ inputs.TAG }}
         id: view-release
         run: |
+          echo "IS_DRAFT=$(gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq .isDraft)" >> "$GITHUB_ENV"
           gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      # Delete release if it already exists
+      # Delete release if it already exists (with or without tag)
       - name: Delete release ${{ inputs.TAG }}
-        if: steps.view-release.outcome == 'success'
+        if: steps.view-release.outcome == 'success' && env.IS_DRAFT == 'true'
         run: |
           gh release delete ${{ inputs.TAG }} ${{ env.GH_RELEASE_DELETE_OPTIONS }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete release ${{ inputs.TAG }} and tag
+        if: steps.view-release.outcome == 'success' && env.IS_DRAFT == 'false'
+        run: |
+          gh release delete ${{ inputs.TAG }} ${{ env.GH_RELEASE_DELETE_OPTIONS }} --cleanup-tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
