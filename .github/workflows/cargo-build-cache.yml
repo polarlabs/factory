@@ -69,9 +69,6 @@ jobs:
       - name: Set environment (stage 2)
         run: |
           echo "CACHE_KEY=${{ env.CACHE_KEY_PREFIX }}-${{ inputs.PROFILE }}-${{ env.RUNNER_OS }}-${{ env.HASH }}" >> $GITHUB_ENV
-          echo "RESTORE_KEY_1=${{ env.CACHE_KEY_PREFIX }}-${{ inputs.PROFILE }}-${{ env.RUNNER_OS }}" >> $GITHUB_ENV
-          echo "RESTORE_KEY_2=${{ env.CACHE_KEY_PREFIX }}-${{ inputs.PROFILE }}" >> $GITHUB_ENV
-          echo "RESTORE_KEY_3=${{ env.CACHE_KEY_PREFIX }}" >> $GITHUB_ENV
 
       - name: Provide build cache
         uses: actions/cache@v3
@@ -79,10 +76,6 @@ jobs:
           path: |
             target/
           key: ${{ env.CACHE_KEY }}
-          restore-keys: |
-            ${{ env.RESTORE_KEY_1 }}
-            ${{ env.RESTORE_KEY_2 }}
-            ${{ env.RESTORE_KEY_3 }}
 
       # cargo check fails faster, then cargo build, while it's results
       # are consumed by subsequent cargo build runs.
