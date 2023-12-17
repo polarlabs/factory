@@ -1,0 +1,5 @@
+{
+  "name": "Run test with cargo",
+  "description": "Tests the library and binary crates, as well as integration tests.",
+  "iconName": "octicon tag"
+}
