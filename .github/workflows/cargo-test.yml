@@ -1,0 +1,71 @@
+#
+# Run unit- and integration tests.
+#
+env:
+  CARGO_TEST_OPTIONS: "--frozen --no-fail-fast --profile ${{ inputs.PROFILE }}"
+  LIBTEST_OPTIONS: "--nocapture --color always --format pretty"
+  CARGO_TERM_COLOR: "always"
+
+on:
+  workflow_call:
+    inputs:
+      DEPS_CACHE_KEY:
+        description: "Cache key for the dependencies."
+        default: ""
+        required: true
+        type: string
+      BUILD_CACHE_KEY:
+        description: "Cache key for the build."
+        default: ""
+        required: true
+        type: string
+      PROFILE:
+        description: "Profile used to build."
+        default: "dev"
+        required: false
+        type: string
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.cargo/
+          key: ${{ inputs.DEPS_CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            target/
+          key: ${{ inputs.BUILD_CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Run unittests of library crate - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo test ${{ env.CARGO_TEST_OPTIONS }} --lib -- --test ${{ env.LIBTEST_OPTIONS }}
+
+      - name: Run unittests of binary crate - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo test ${{ env.CARGO_TEST_OPTIONS }} --bin '*' -- --test ${{ env.LIBTEST_OPTIONS }}
+
+      - name: Run integration tests - profile ${{ inputs.PROFILE }}
+        run: |
+          cargo test ${{ env.CARGO_TEST_OPTIONS }} --test integration -- --test ${{ env.LIBTEST_OPTIONS }}
