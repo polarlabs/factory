@@ -1,0 +1,116 @@
+name: Create release
+
+on:
+  workflow_call:
+    inputs:
+      ARTIFACT_NAME:
+        description: "Artifact to include in the release, also used as asset name."
+        type: string
+        required: true
+      ASSET_FILE:
+        description: "Asset's file name."
+        type: string
+        required: true
+      COMMIT:
+        description: "Commit to tag, relates the release to a defined commit."
+        type: string
+        required: true
+      TAG:
+        description: "Tag to relate the release to, also used as a name for the release."
+        type: string
+        required: true
+      DRAFT:
+        description: "Flag release as draft."
+        type: boolean
+        required: false
+        default: true
+      PRERELEASE:
+        description: "Flag release as prerelease."
+        type: boolean
+        required: false
+        default: false
+      LATEST:
+        description: "Flag release as latest."
+        type: boolean
+        required: false
+        default: false
+      TITLE:
+        description: "Release title"
+        type: string
+        required: false
+        default: ""
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+#permissions:
+#  contents: read
+
+env:
+  GH_RELEASE_CREATE_OPTIONS: "--draft=${{ inputs.DRAFT }} --prerelease=${{ inputs.PRERELEASE }} --latest=${{ inputs.LATEST }} --title \"${{ inputs.TITLE }}\" --target ${{ inputs.COMMIT }} "
+  GH_RELEASE_DELETE_OPTIONS: "--yes "
+  GH_RELEASE_VIEW_OPTIONS: "--json id,name,tagName,author,createdAt,isDraft,isPrerelease,apiUrl,targetCommitish,assets "
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Set environment
+        run: |
+          echo "IS_DRAFT=$(gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq .isDraft)" >> "$GITHUB_ENV"
+          echo "SHA_SHORT=$(git rev-parse --short ${{ inputs.COMMIT }} )" >> "$GITHUB_ENV"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download artifact ${{ inputs.ARTIFACT_NAME }}
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.ARTIFACT_NAME }}
+
+      # Check if release already exists, pretty print json output with jq
+      - name: View release ${{ inputs.TAG }}
+        id: view-release
+        run: |
+          gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      # Delete release if it already exists (with / without tag)
+      - name: Delete release ${{ inputs.TAG }}
+        if: steps.view-release.outcome == 'success' && env.IS_DRAFT == 'true'
+        run: |
+          gh release delete ${{ inputs.TAG }} ${{ env.GH_RELEASE_DELETE_OPTIONS }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete release ${{ inputs.TAG }} and related tag
+        if: steps.view-release.outcome == 'success' && env.IS_DRAFT == 'false'
+        run: |
+          gh release delete ${{ inputs.TAG }} ${{ env.GH_RELEASE_DELETE_OPTIONS }} --cleanup-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create release
+      - name: Create release ${{ inputs.TAG }} on ${{ env.SHA_SHORT }}
+        run: |
+          gh release create \
+            ${{ inputs.TAG }} \
+            ${{ inputs.ASSET_FILE }}#${{ inputs.ARTIFACT_NAME }} \
+            ${{ env.GH_RELEASE_CREATE_OPTIONS }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # View details of created release, pretty print json output with jq
+      - name: Post View release ${{ inputs.TAG }}
+        run: |
+          gh release view ${{ inputs.TAG }} ${{ env.GH_RELEASE_VIEW_OPTIONS }} | jq -e .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
