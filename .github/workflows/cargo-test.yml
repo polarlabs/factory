@@ -58,6 +58,18 @@ jobs:
           key: ${{ inputs.BUILD_CACHE_KEY }}
           fail-on-cache-miss: true
 
+      - name: Install mkcert
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install mkcert
+
+      - name: Install certificates
+        run: |
+          mkcert --version
+          sudo mkcert -install
+          mkdir certs
+          mkcert -cert-file certs/localhost.pem -key-file certs/localhost.key localhost 127.0.0.1 ::1 
+
       - name: Run unittests of library crate - profile ${{ inputs.PROFILE }}
         run: |
           cargo test ${{ env.CARGO_TEST_OPTIONS }} --lib -- --test ${{ env.LIBTEST_OPTIONS }}
